@@ -1,12 +1,24 @@
-import TodoApp from "./todo"
+'use client'
+
+import { useState, useEffect } from "react"
 
 export default function ToDo() {
+    const [isLogged, setIsLogged] = useState(false)
+
+    const login = async () => {
+        setIsLogged(true)
+    }
+    useEffect(() => {
+        // if (isLogged === true) {
+        //     window.location.href = `./home`
+        // }
+        setIsLogged(false)
+    }, [isLogged]);
+
     return (
         <>
-            <TodoApp/>
+            <a href="/api/auth/login" onClick={login}>Login</a>
+            <h1>Bienvenido</h1>
         </>
-        // usuario ponga una tarea (form) .post
-        // Lista de tarea (accordion) en otro file que sea la base y llame a la base de datos
-        // quitar tareas (button) .delete
     )
 };

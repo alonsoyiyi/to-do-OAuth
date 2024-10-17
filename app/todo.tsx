@@ -13,48 +13,54 @@ export default function TodoApp() {
     const [todos, setTodos] = useState<Todo[]>([])
     const [newTodo, setNewTodo] = useState("")
     const [isLoading, setIsLoading] = useState(false)
-    const addTodo = async () => {
-        if (newTodo.trim() !== "") {
-            await createTask(newTodo)
-            setNewTodo("")
-            setIsLoading(false);
-        }
-    }
-    const toggleTodo = (id: number) => {
-        setTodos(
-            todos.map((todo) =>
-                todo.id === id ? { ...todo, completed: !todo.completed } : todo
-            )
-        )
-    }
-    const deleteTodo = async (id: number) => {
-        await deleteTask(id);
-        setIsLoading(false);
-    }
+
     async function fetchTasks() {
         const res = await fetch('/api/tasks');
         const data = await res.json();
         setTodos(data.tasks)
     }
-    async function createTask(title: string) {
+    const addTodo = async () => {
+        if (newTodo.trim() !== "") {
+            const title = newTodo
+            setIsLoading(true);
+            await fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title }),
+            });
+            setNewTodo("")
+            setIsLoading(false);
+        }
+    }
+    const toggleTodo = async (id: number) => {
+        setTodos(
+            todos.map((todo) =>
+                todo.id === id ? { ...todo, completed: !todo.completed } : todo
+            )
+        )
         setIsLoading(true);
-        await fetch('/api/tasks', {
-            method: 'POST',
+        await fetch('api/tasks', {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ title }),
-        });
+            body: JSON.stringify({ id })
+        }
+        );
+        setIsLoading(false);
     }
-    async function deleteTask(id:number) {
+    const deleteTodo = async (id: number) => {
         setIsLoading(true)
-        await fetch('api/tasks',{
+        await fetch('api/tasks', {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ id }),
         })
+        setIsLoading(false);
     }
     useEffect(() => {
         if (!isLoading) {
