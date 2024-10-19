@@ -1,15 +1,19 @@
 "use client"
 import { useEffect, useState } from "react"
+import { useUser } from "@auth0/nextjs-auth0/client"
 import { Plus, Trash2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+
+
 interface Todo {
     id: number
     title: string
     completed: boolean
 }
 export default function TodoApp() {
+    const user = useUser();
     const [todos, setTodos] = useState<Todo[]>([])
     const [newTodo, setNewTodo] = useState("")
     const [isLoading, setIsLoading] = useState(false)
@@ -70,6 +74,7 @@ export default function TodoApp() {
     return (
         <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
             <h1 className="text-2xl font-bold mb-4 text-center">Lista de Tareas</h1>
+            <h2>{user.user?.name}</h2>
             <div className="flex mb-4">
                 <Input
                     type="text"

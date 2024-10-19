@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
+import TodoApp from "./todo"
 
 export default function ToDo() {
     const [isLogged, setIsLogged] = useState(false)
@@ -19,6 +20,7 @@ export default function ToDo() {
         <>
             <a href="/api/auth/login" onClick={login}>Login</a>
             <h1>Bienvenido</h1>
+            <TodoApp />
         </>
     )
 };

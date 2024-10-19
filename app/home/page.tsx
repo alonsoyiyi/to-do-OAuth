@@ -5,7 +5,7 @@ export default function Todo() {
         <>
             <a href="/api/auth/logout">Logout</a>
             <a href="../user">Mi perfil</a>
-            <TodoApp />
+            
         </>
     )
 
