@@ -1,26 +1,13 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { getSession } from '@auth0/nextjs-auth0'
+import Welcome from '@/components/Welcome'
 
-import { useState, useEffect } from "react"
-import TodoApp from "./todo"
+export default async function Home() {
+  const session = await getSession()
 
-export default function ToDo() {
-    const [isLogged, setIsLogged] = useState(false)
+  if (session?.user) {
+    redirect('/home')
+  }
 
-    const login = async () => {
-        setIsLogged(true)
-    }
-    useEffect(() => {
-        // if (isLogged === true) {
-        //     window.location.href = `./home`
-        // }
-        setIsLogged(false)
-    }, [isLogged]);
-
-    return (
-        <>
-            <a href="/api/auth/login" onClick={login}>Login</a>
-            <h1>Bienvenido</h1>
-            <TodoApp />
-        </>
-    )
-};
+  return <Welcome />
+}

@@ -1,29 +1,103 @@
 import { NextRequest, NextResponse } from 'next/server';
-let tasks: { id: number; title: string; completed: boolean }[] = [];
-tasks.push({ id: 123, title: 'tarea-1', completed: true })
+import { getSession } from '@auth0/nextjs-auth0';
+import mongoose from 'mongoose';
 
-export async function GET() {
-    console.log(tasks)
+// Importa tu modelo de tarea
+import TaskModel from '@/models/Task';
+
+// Asegúrate de conectarte a la base de datos antes de realizar consultas
+const connectToDatabase = async () => {
+    if (mongoose.connection.readyState === 0) {
+        await mongoose.connect(process.env.MONGODB_URI!); // Asegúrate de que la URI esté definida
+        console.log('Conectado a MongoDB');
+    }
+};
+
+export async function GET(req: NextRequest) {
+    await connectToDatabase(); // Conecta a la base de datos
+
+    // Obtén la sesión del usuario utilizando la función getSession
+    const session = await getSession(req);
+
+    // Verifica que la sesión y el usuario sean válidos
+    if (!session || !session.user || !session.user.sub) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = session.user.sub; // Obtén el ID del usuario
+
+    // Obtén las tareas del usuario desde la base de datos
+    const tasks = await TaskModel.find({ userId }); // Busca las tareas asociadas al usuario
+
     return NextResponse.json({ tasks });
 }
 
 export async function POST(req: NextRequest) {
+    await connectToDatabase(); // Conecta a la base de datos
+
+    // Obtén la sesión del usuario utilizando la función getSession
+    const session = await getSession(req);
+
+    // Verifica que la sesión y el usuario sean válidos
+    if (!session || !session.user || !session.user.sub) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = session.user.sub; // Obtén el ID del usuario
+
     const { title } = await req.json();
-    const newTask = { id: Date.now(), title, completed: false };
-    tasks.push(newTask);
+    const newTask = new TaskModel({ title, completed: false, userId }); // Crea una nueva tarea
+    await newTask.save(); // Guarda la tarea en la base de datos
+    console.log('Tarea guardada:', newTask);
+
+
     return NextResponse.json({ message: 'Task created successfully', task: newTask });
 }
 
 export async function DELETE(req: NextRequest) {
+    await connectToDatabase(); // Conecta a la base de datos
+
+    // Obtén la sesión del usuario utilizando la función getSession
+    const session = await getSession(req);
+
+    // Verifica que la sesión y el usuario sean válidos
+    if (!session || !session.user || !session.user.sub) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = session.user.sub; // Obtén el ID del usuario
+
     const { id } = await req.json();
-    const tempTasks = tasks.filter(task => task.id !== id);
-    tasks = tempTasks
+    const result = await TaskModel.deleteOne({ _id: id, userId }); // Elimina la tarea asociada al usuario
+
+    if (result.deletedCount === 0) {
+        return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: 'Task deleted successfully' });
 }
 
 export async function PUT(req: NextRequest) {
-    const { id } = await req.json();
-    const tareaIndex = tasks.findIndex((tarea) => tarea.id === id);
-    if (tareaIndex > -1) {
-        tasks[tareaIndex].completed = !tasks[tareaIndex].completed;
+    await connectToDatabase(); // Conecta a la base de datos
+
+    // Obtén la sesión del usuario utilizando la función getSession
+    const session = await getSession(req);
+
+    // Verifica que la sesión y el usuario sean válidos
+    if (!session || !session.user || !session.user.sub) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const userId = session.user.sub; // Obtén el ID del usuario
+
+    const { id } = await req.json();
+    const tarea = await TaskModel.findOne({ _id: id, userId }); // Busca la tarea asociada al usuario
+
+    if (tarea) {
+        tarea.completed = !tarea.completed; // Cambia el estado de la tarea
+        await tarea.save(); // Guarda los cambios
+        return NextResponse.json({ message: 'Task updated successfully', task: tarea });
+    }
+
+    return NextResponse.json({ error: 'Task not found' }, { status: 404 });
 }
