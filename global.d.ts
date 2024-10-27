@@ -1,9 +1,5 @@
-import { MongoClient } from 'mongodb';
+import mongoose from "mongoose";
 
 declare global {
-  namespace NodeJS {
-    interface Global {
-      _mongoClientPromise: Promise<MongoClient>;
-    }
-  }
+	var mongoose: any; // Aquí definimos mongoose para que lo use globalmente
 }

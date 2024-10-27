@@ -1,29 +1,43 @@
-import { MongoClient } from 'mongodb';
+// lib/mongodb.ts
+import mongoose from 'mongoose';
 
-const uri = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI as string;
 
-if (!uri) {
-  throw new Error("Por favor, define la variable de entorno MONGODB_URI");
+if (!MONGODB_URI) {
+  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }
 
-const options = {
-  useUnifiedTopology: true,
-};
+/**
+ * Global is used here to prevent MongoDB connection being re-established
+ * on every request when deployed on serverless platforms like Vercel.
+ */
+interface MongooseCache {
+  conn: mongoose.Connection | null;
+  promise: Promise<mongoose.Connection> | null;
+}
 
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
+let cached: MongooseCache = global.mongoose as MongooseCache;
 
-if (process.env.NODE_ENV === "development") {
-  // Usar el cliente global en desarrollo
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function dbConnect() {
+  if (cached.conn) {
+    return cached.conn;
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  // En producción, crear un nuevo cliente
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+    };
+
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      return mongoose.connection;
+    });
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
 }
 
-export default clientPromise;
+export default dbConnect;
